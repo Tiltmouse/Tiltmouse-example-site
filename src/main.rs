@@ -6,9 +6,11 @@ use kiss3d::scene::SceneNode;
 use kiss3d::window::{State, Window};
 use nalgebra::geometry::Quaternion;
 use nalgebra::{Point3, UnitQuaternion, Vector3};
+use std::sync::mpsc::channel;
+use std::sync::mpsc::Receiver;
 use std::vec;
 
-mod lib;
+mod WebSocketWeb;
 
 struct AppState {
     cube: SceneNode,
@@ -16,14 +18,21 @@ struct AppState {
     time: f32,
     vec: Vec<Vec<[f32; 3]>>,
     rot: UnitQuaternion<f32>,
+    rx: Receiver<String>,
 }
 
 impl State for AppState {
     fn step(&mut self, window: &mut Window) {
-        self.cube
-            .set_local_rotation(UnitQuaternion::new(Vector3::new(0.0, 0.0, self.time)));
+        while let Ok(data) = self.rx.try_recv() {
+            let data_arr = data.split(" ").collect::<Vec<_>>();
+            //let rec = Vector::new( f32::from_str(data_arr[0]).unwrap(),);
 
-        // todo: add reorient
+            let new_pos = &Point3::new(0.0, 0.1, 0.0);
+            self.cube.reorient(new_pos, new_pos, &Vector3::y_axis());
+
+            self.cube
+                .set_local_rotation(UnitQuaternion::new(Vector3::new(0.0, 0.0, self.time)));
+        }
 
         for x in &self.vec {
             window.draw_line(
@@ -38,6 +47,8 @@ impl State for AppState {
 }
 
 fn main() {
+    let (tx, rx) = channel();
+
     let mut window = Window::new("");
     window.set_background_color(0.2, 0.8, 1.0);
     window.set_light(Light::StickToCamera);
@@ -59,6 +70,7 @@ fn main() {
     let startp = size_step / 2.0 * (count_step as f32 - 1.0);
 
     let mut vec: Vec<Vec<[f32; 3]>> = Vec::new();
+
     // тута линии
     for i in 0..count_step {
         let x = i as f32;
@@ -85,6 +97,7 @@ fn main() {
         time,
         vec,
         rot,
+        rx,
     };
 
     window.render_loop(state)
