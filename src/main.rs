@@ -8,6 +8,8 @@ use nalgebra::geometry::Quaternion;
 use nalgebra::{Point3, UnitQuaternion, Vector3};
 use std::vec;
 
+mod lib;
+
 struct AppState {
     cube: SceneNode,
     sphere: SceneNode,
